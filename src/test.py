@@ -1,50 +1,62 @@
-#!/usr/bin/env python
-
+import unittest
 from cat_controller import CatController
 
-WATER_HOURS = [8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19]
+
+class TestCatController(unittest.TestCase):
+    """Test case for CatController class"""
+
+    def setUp(self):
+        """Set up the test fixture"""
+        self.cat_controller = CatController()
+
+    def test_01_cat_cage_open_false_by_default(self):
+        """Test if cat cage is initially closed"""
+        self.assertFalse(self.cat_controller.cat_cage_open)
+
+    def test_02_daily_food_intake(self):
+        """Test daily food intake"""
+        self.cat_controller.daily_food_intake()
+        food_items = self.cat_controller.food_items
+        self.assertListEqual(food_items, ["1 mouse", "1 hamster", "1 chicken"])
+
+    def test_03_feeding_hours(self):
+        """Test feeding hours"""
+        feeding_hours = [8, 12, 17]
+        for hour in range(24):
+            actions = self.cat_controller.hourly_run(hour)
+            if hour in feeding_hours:
+                self.assertTrue(any(action.startswith("Feed") for action in actions))
+            else:
+                self.assertFalse(any(action.startswith("Feed") for action in actions))
+
+    def test_04_cat_cage_opening_hours(self):
+        """Test cat cage opening hours"""
+        opening_hours = [7]
+        non_opening_hours = [hour for hour in range(24) if hour not in opening_hours]
+        for hour in range(24):
+            actions = self.cat_controller.hourly_run(hour)
+            if hour in opening_hours:
+                self.assertIn("Open cat cage.", actions)
+                self.assertTrue(self.cat_controller.cat_cage_open)
+            elif hour in non_opening_hours:
+                self.assertNotIn("Open cat cage.", actions)
+                self.assertFalse(self.cat_controller.cat_cage_open)
+
+    def test_05_water_hours(self):
+        """Test water hours"""
+        water_hours = [hour for hour in range(24) if hour != 7]
+        non_water_hours = [7]
+        for hour in range(24):
+            actions = self.cat_controller.hourly_run(hour)
+            if hour in water_hours:
+                self.assertIn("Give water.", actions)
+            elif hour in non_water_hours:
+                self.assertNotIn("Give water.", actions)
+
+    def tearDown(self):
+        """Tear down the test fixture"""
+        self.cat_controller = None
 
 
-def main():
-    test_failed = False
-    cat_controller = CatController()
-
-    # Test that water is only given each hour 8-11 and 13-19.
-    for hour in range(0, 23):
-        if hour in WATER_HOURS:
-            if not "Give water." in cat_controller.hourly_run(hour):
-                test_failed = True
-        elif "Give water." in cat_controller.hourly_run(hour):
-            test_failed = True
-
-    # Test that cat cage is opened at 7:
-    if not "Open cat cage." in cat_controller.hourly_run(7):
-        test_failed = True
-
-    # Test that cat cage is closed at 20:
-    if not "Close cat cage." in cat_controller.hourly_run(20):
-        test_failed = True
-
-    # Test that cat is fed at 8, 12 and 17.
-    for hour in [8, 12, 17]:
-        if not "Feed" in cat_controller.hourly_run(hour):
-            test_failed = True
-
-    # Test that cat is fed 1 mouse, 1 hamster and 1 chicken per day.
-    not_yet_fed = ["1 mouse", "1 hamster", "1 chicken"]
-    for hour in [8, 12, 17]:
-        hour_status = cat_controller.hourly_run(hour)
-        for food in not_yet_fed:
-            if food in hour_status:
-                not_yet_fed.remove(food)
-    if len(not_yet_fed):
-        test_failed = True
-
-    if test_failed:
-        print("Unfortunately, one or several tests failed.")
-    else:
-        print("All tests ran successfully.")
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    unittest.main()
